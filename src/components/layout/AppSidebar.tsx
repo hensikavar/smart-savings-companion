@@ -46,18 +46,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 relative overflow-hidden">
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
         <div className={cn(
-          "flex items-center gap-3 transition-all duration-200",
+          "flex items-center gap-3 transition-all duration-200 relative z-10",
           collapsed && "justify-center"
         )}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sidebar-foreground shadow-glow backdrop-blur-sm border border-white/10">
             <Wallet className="h-5 w-5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-tight">SmartExpense</span>
-              <span className="text-xs text-sidebar-foreground/70">Track smarter</span>
+              <span className="text-xs text-sidebar-foreground/60">Track smarter</span>
             </div>
           )}
         </div>

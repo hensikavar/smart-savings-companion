@@ -40,50 +40,55 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 p-12 flex-col justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 text-primary-foreground">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary to-primary-glow p-12 flex-col justify-between relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+        
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-primary-foreground backdrop-blur-sm border border-white/10 shadow-glow">
             <Wallet className="h-6 w-6" />
           </div>
           <span className="text-2xl font-bold text-primary-foreground">SmartExpense</span>
         </div>
         
-        <div className="space-y-6">
+        <div className="space-y-6 relative z-10">
           <h1 className="text-4xl font-bold text-primary-foreground leading-tight">
             Take control of your finances with smart tracking
           </h1>
           <p className="text-lg text-primary-foreground/80">
             Track expenses, manage recurring bills, set savings goals, and get alerts when you need them most.
           </p>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2 text-primary-foreground/80">
-              <div className="h-2 w-2 rounded-full bg-primary-foreground/60" />
-              <span>Easy expense tracking</span>
+          <div className="flex gap-6 pt-4">
+            <div className="flex items-center gap-2 text-primary-foreground/90">
+              <div className="h-2 w-2 rounded-full bg-white/80 animate-pulse" />
+              <span className="font-medium">Easy expense tracking</span>
             </div>
-            <div className="flex items-center gap-2 text-primary-foreground/80">
-              <div className="h-2 w-2 rounded-full bg-primary-foreground/60" />
-              <span>Smart alerts</span>
+            <div className="flex items-center gap-2 text-primary-foreground/90">
+              <div className="h-2 w-2 rounded-full bg-white/80 animate-pulse" />
+              <span className="font-medium">Smart alerts</span>
             </div>
           </div>
         </div>
 
-        <p className="text-sm text-primary-foreground/60">
+        <p className="text-sm text-primary-foreground/50 relative z-10">
           © 2026 SmartExpense. All rights reserved.
         </p>
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-background via-background to-accent/20">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-lg">
               <Wallet className="h-6 w-6" />
             </div>
-            <span className="text-2xl font-bold">SmartExpense</span>
+            <span className="text-2xl font-bold text-gradient">SmartExpense</span>
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold">Welcome back</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
             <p className="mt-2 text-muted-foreground">
               Enter your credentials to access your account
             </p>
@@ -138,7 +143,7 @@ export default function Login() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
