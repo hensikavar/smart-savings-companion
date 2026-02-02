@@ -25,6 +25,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -41,6 +42,10 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -107,8 +112,10 @@ export default {
         "slide-up": "slide-up 0.4s ease-out",
       },
       boxShadow: {
-        "card": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-        "card-hover": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "card": "0 2px 8px -2px rgba(30, 41, 59, 0.08), 0 1px 3px -1px rgba(30, 41, 59, 0.06)",
+        "card-hover": "0 12px 24px -8px rgba(30, 41, 59, 0.12), 0 4px 8px -4px rgba(30, 41, 59, 0.08)",
+        "elevated": "0 8px 30px -12px rgba(30, 41, 59, 0.15)",
+        "glow": "0 0 20px -5px hsl(var(--primary) / 0.4)",
       },
     },
   },

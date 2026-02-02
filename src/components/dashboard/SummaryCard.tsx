@@ -14,16 +14,16 @@ interface SummaryCardProps {
 }
 
 const variantStyles = {
-  default: 'bg-card',
-  primary: 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground',
+  default: 'bg-card border border-border/50',
+  primary: 'bg-gradient-to-br from-primary via-primary to-primary-glow text-primary-foreground shadow-glow',
   success: 'bg-gradient-to-br from-success to-success/80 text-success-foreground',
   warning: 'bg-gradient-to-br from-warning to-warning/80 text-warning-foreground',
   danger: 'bg-gradient-to-br from-destructive to-destructive/80 text-destructive-foreground',
 };
 
 const iconStyles = {
-  default: 'bg-primary/10 text-primary',
-  primary: 'bg-primary-foreground/20 text-primary-foreground',
+  default: 'bg-gradient-to-br from-primary/15 to-primary/5 text-primary',
+  primary: 'bg-white/15 text-primary-foreground backdrop-blur-sm',
   success: 'bg-success-foreground/20 text-success-foreground',
   warning: 'bg-warning-foreground/20 text-warning-foreground',
   danger: 'bg-destructive-foreground/20 text-destructive-foreground',
@@ -39,7 +39,7 @@ export function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div className={cn(
-      "rounded-xl p-6 shadow-card transition-all duration-200 hover:shadow-card-hover animate-fade-in",
+      "rounded-xl p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 animate-fade-in",
       variantStyles[variant]
     )}>
       <div className="flex items-start justify-between">
