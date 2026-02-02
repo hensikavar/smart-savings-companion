@@ -24,14 +24,20 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (!success) {
+      const result = await login(email, password);
+      if (!result.success) {
         toast({
           title: 'Login failed',
-          description: 'Invalid email or password. Please try again.',
+          description: result.error || 'Invalid email or password. Please try again.',
           variant: 'destructive',
         });
       }
+    } catch (error) {
+      toast({
+        title: 'Login failed',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
