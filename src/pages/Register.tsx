@@ -46,11 +46,11 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const success = await register(name, email, password, parseFloat(savingsGoal) || 3000);
-      if (!success) {
+      const result = await register(name, email, password, confirmPassword, parseFloat(savingsGoal) || 3000);
+      if (!result.success) {
         toast({
           title: 'Registration failed',
-          description: 'An account with this email already exists.',
+          description: result.error || 'An account with this email already exists.',
           variant: 'destructive',
         });
       } else {
@@ -59,6 +59,12 @@ export default function Register() {
           description: 'Your account has been created successfully.',
         });
       }
+    } catch (error) {
+      toast({
+        title: 'Registration failed',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

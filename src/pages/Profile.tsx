@@ -22,12 +22,20 @@ export default function Profile() {
     setIsLoading(true);
 
     try {
-      updateProfile({
+      const result = await updateProfile({
         name,
-        email,
         monthlySavingsGoal: parseFloat(savingsGoal) || 3000,
       });
-      toast({ title: 'Profile updated successfully' });
+      
+      if (result.success) {
+        toast({ title: 'Profile updated successfully' });
+      } else {
+        toast({
+          title: 'Update failed',
+          description: result.error || 'Something went wrong. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       toast({
         title: 'Update failed',
