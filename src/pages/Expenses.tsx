@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Search, Filter, Edit2, Trash2, Plus, Receipt } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, Plus, Receipt, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,41 +30,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { EXPENSE_CATEGORIES, Expense } from '@/types/expense';
 import { useExpenses } from '@/contexts/ExpenseContext';
 import { AddExpenseDialog } from '@/components/expenses/AddExpenseDialog';
 import { useToast } from '@/hooks/use-toast';
+import { ExpenseApiData } from '@/services/expenseService';
 
 export default function Expenses() {
-  const { expenses, deleteExpense } = useExpenses();
+  const { expenses, categories, deleteExpense, loading } = useExpenses();
   const { toast } = useToast();
   
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [editExpense, setEditExpense] = useState<ExpenseApiData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter(exp => {
       const matchesSearch = exp.description.toLowerCase().includes(search.toLowerCase()) ||
-        exp.category.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || exp.category === categoryFilter;
-      const matchesType = typeFilter === 'all' || exp.type === typeFilter;
+        exp.categoryName.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || exp.categoryId === categoryFilter;
+      const matchesType = typeFilter === 'all' || exp.expenseType === typeFilter;
       return matchesSearch && matchesCategory && matchesType;
     });
   }, [expenses, search, categoryFilter, typeFilter]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId) {
-      deleteExpense(deleteId);
-      toast({ title: 'Expense deleted successfully' });
-      setDeleteId(null);
+      setIsDeleting(true);
+      try {
+        await deleteExpense(deleteId);
+        toast({ title: 'Expense deleted successfully' });
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to delete expense',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsDeleting(false);
+        setDeleteId(null);
+      }
     }
   };
 
-  const handleEdit = (expense: Expense) => {
+  const handleEdit = (expense: ExpenseApiData) => {
     setEditExpense(expense);
     setShowAddDialog(true);
   };
@@ -104,8 +116,13 @@ export default function Expenses() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {EXPENSE_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span className="flex items-center gap-2">
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -115,8 +132,8 @@ export default function Expenses() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="one-time">One-time</SelectItem>
-                <SelectItem value="recurring">Recurring</SelectItem>
+                <SelectItem value="ONE_TIME">One-time</SelectItem>
+                <SelectItem value="RECURRING">Recurring</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -126,7 +143,12 @@ export default function Expenses() {
       {/* Expenses Table */}
       <Card className="shadow-card">
         <CardContent className="p-0">
-          {filteredExpenses.length > 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin mb-4" />
+              <p>Loading expenses...</p>
+            </div>
+          ) : filteredExpenses.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -143,11 +165,20 @@ export default function Expenses() {
                   {filteredExpenses.map((expense) => (
                     <TableRow key={expense.id} className="group">
                       <TableCell className="font-medium">
-                        {format(new Date(expense.date), 'MMM d, yyyy')}
+                        {format(new Date(expense.expenseDate), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="font-normal">
-                          {expense.category}
+                        <Badge 
+                          variant="secondary" 
+                          className="font-normal"
+                          style={{ 
+                            backgroundColor: `${expense.categoryColor}20`,
+                            color: expense.categoryColor,
+                            borderColor: expense.categoryColor 
+                          }}
+                        >
+                          <span className="mr-1">{expense.categoryIcon}</span>
+                          {expense.categoryName}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate">
@@ -155,10 +186,11 @@ export default function Expenses() {
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={expense.type === 'recurring' ? 'default' : 'outline'}
+                          variant={expense.expenseType === 'RECURRING' ? 'default' : 'outline'}
                           className="capitalize"
                         >
-                          {expense.type}
+                          {expense.expenseType === 'ONE_TIME' ? 'One-time' : 'Recurring'}
+                          {expense.recurrenceType && ` (${expense.recurrenceType.toLowerCase()})`}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
@@ -219,9 +251,13 @@ export default function Expenses() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

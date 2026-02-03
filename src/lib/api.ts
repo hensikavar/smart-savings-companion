@@ -1,7 +1,7 @@
 // Base API Configuration
 // Update this URL to match your backend server
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // Token management
 const TOKEN_KEY = 'smartexpense_access_token';

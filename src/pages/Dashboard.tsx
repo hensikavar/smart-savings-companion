@@ -23,7 +23,8 @@ export default function Dashboard() {
 
   const categoryData = useMemo(() => {
     const grouped = expenses.reduce((acc, exp) => {
-      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      const categoryName = exp.categoryName || 'Other';
+      acc[categoryName] = (acc[categoryName] || 0) + exp.amount;
       return acc;
     }, {} as Record<string, number>);
 
@@ -34,8 +35,8 @@ export default function Dashboard() {
   }, [expenses]);
 
   const typeData = useMemo(() => {
-    const recurring = expenses.filter(e => e.type === 'recurring').reduce((sum, e) => sum + e.amount, 0);
-    const oneTime = expenses.filter(e => e.type === 'one-time').reduce((sum, e) => sum + e.amount, 0);
+    const recurring = expenses.filter(e => e.expenseType === 'RECURRING').reduce((sum, e) => sum + e.amount, 0);
+    const oneTime = expenses.filter(e => e.expenseType === 'ONE_TIME').reduce((sum, e) => sum + e.amount, 0);
     return [
       { name: 'Recurring', value: recurring },
       { name: 'One-time', value: oneTime },
