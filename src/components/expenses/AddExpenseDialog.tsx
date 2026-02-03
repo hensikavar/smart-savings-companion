@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import {
@@ -25,35 +25,54 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { EXPENSE_CATEGORIES, Expense } from '@/types/expense';
 import { useExpenses } from '@/contexts/ExpenseContext';
 import { useToast } from '@/hooks/use-toast';
+import { ExpenseApiData } from '@/services/expenseService';
 
 interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editExpense?: Expense | null;
+  editExpense?: ExpenseApiData | null;
 }
 
 export function AddExpenseDialog({ open, onOpenChange, editExpense }: AddExpenseDialogProps) {
-  const { addExpense, updateExpense } = useExpenses();
+  const { addExpense, updateExpense, categories } = useExpenses();
   const { toast } = useToast();
   
-  const [category, setCategory] = useState(editExpense?.category || '');
+  const [categoryId, setCategoryId] = useState(editExpense?.categoryId || '');
   const [amount, setAmount] = useState(editExpense?.amount?.toString() || '');
-  const [type, setType] = useState<'one-time' | 'recurring'>(editExpense?.type || 'one-time');
+  const [expenseType, setExpenseType] = useState<'ONE_TIME' | 'RECURRING'>(
+    editExpense?.expenseType || 'ONE_TIME'
+  );
   const [description, setDescription] = useState(editExpense?.description || '');
   const [date, setDate] = useState<Date | undefined>(
-    editExpense?.date ? new Date(editExpense.date) : new Date()
+    editExpense?.expenseDate ? new Date(editExpense.expenseDate) : new Date()
   );
-  const [recurrence, setRecurrence] = useState<'weekly' | 'monthly'>(
-    editExpense?.recurrence || 'monthly'
+  const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'MONTHLY'>(
+    editExpense?.recurrenceType || 'MONTHLY'
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Reset form when dialog opens/closes or editExpense changes
+  useEffect(() => {
+    if (open) {
+      if (editExpense) {
+        setCategoryId(editExpense.categoryId);
+        setAmount(editExpense.amount.toString());
+        setExpenseType(editExpense.expenseType);
+        setDescription(editExpense.description);
+        setDate(new Date(editExpense.expenseDate));
+        setRecurrenceType(editExpense.recurrenceType || 'MONTHLY');
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, editExpense]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!category || !amount || !date) {
+    if (!categoryId || !amount || !date) {
       toast({
         title: 'Missing fields',
         description: 'Please fill in all required fields',
@@ -62,34 +81,46 @@ export function AddExpenseDialog({ open, onOpenChange, editExpense }: AddExpense
       return;
     }
 
-    const expenseData = {
-      category,
-      amount: parseFloat(amount),
-      type,
-      description,
-      date: format(date, 'yyyy-MM-dd'),
-      ...(type === 'recurring' && { recurrence }),
-    };
+    setIsSubmitting(true);
 
-    if (editExpense) {
-      updateExpense(editExpense.id, expenseData);
-      toast({ title: 'Expense updated successfully' });
-    } else {
-      addExpense(expenseData);
-      toast({ title: 'Expense added successfully' });
+    try {
+      const expenseData = {
+        categoryId,
+        amount: parseFloat(amount),
+        description,
+        expenseDate: format(date, 'yyyy-MM-dd'),
+        expenseType,
+        recurrenceType: expenseType === 'RECURRING' ? recurrenceType : null,
+      };
+
+      if (editExpense) {
+        await updateExpense(editExpense.id, expenseData);
+        toast({ title: 'Expense updated successfully' });
+      } else {
+        await addExpense(expenseData);
+        toast({ title: 'Expense added successfully' });
+      }
+
+      resetForm();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save expense',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetForm();
-    onOpenChange(false);
   };
 
   const resetForm = () => {
-    setCategory('');
+    setCategoryId('');
     setAmount('');
-    setType('one-time');
+    setExpenseType('ONE_TIME');
     setDescription('');
     setDate(new Date());
-    setRecurrence('monthly');
+    setRecurrenceType('MONTHLY');
   };
 
   return (
@@ -101,13 +132,18 @@ export function AddExpenseDialog({ open, onOpenChange, editExpense }: AddExpense
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {EXPENSE_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span className="flex items-center gap-2">
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -132,27 +168,27 @@ export function AddExpenseDialog({ open, onOpenChange, editExpense }: AddExpense
 
           <div className="space-y-2">
             <Label>Type *</Label>
-            <Select value={type} onValueChange={(v: 'one-time' | 'recurring') => setType(v)}>
+            <Select value={expenseType} onValueChange={(v: 'ONE_TIME' | 'RECURRING') => setExpenseType(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="one-time">One-time</SelectItem>
-                <SelectItem value="recurring">Recurring</SelectItem>
+                <SelectItem value="ONE_TIME">One-time</SelectItem>
+                <SelectItem value="RECURRING">Recurring</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {type === 'recurring' && (
+          {expenseType === 'RECURRING' && (
             <div className="space-y-2">
               <Label>Recurrence</Label>
-              <Select value={recurrence} onValueChange={(v: 'weekly' | 'monthly') => setRecurrence(v)}>
+              <Select value={recurrenceType} onValueChange={(v: 'WEEKLY' | 'MONTHLY') => setRecurrenceType(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="MONTHLY">Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -200,8 +236,8 @@ export function AddExpenseDialog({ open, onOpenChange, editExpense }: AddExpense
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
-              {editExpense ? 'Update' : 'Add Expense'}
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : editExpense ? 'Update' : 'Add Expense'}
             </Button>
           </div>
         </form>

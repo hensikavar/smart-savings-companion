@@ -1,15 +1,20 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { Expense, ChecklistItem, Alert } from '@/types/expense';
+import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
+import { ChecklistItem, Alert } from '@/types/expense';
+import { Category } from '@/types/category';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuth } from './AuthContext';
+import { expenseService, ExpenseApiData, CreateExpenseRequest, UpdateExpenseRequest } from '@/services/expenseService';
+import { categoryService } from '@/services/categoryService';
 
 interface ExpenseContextType {
-  expenses: Expense[];
+  expenses: ExpenseApiData[];
+  categories: Category[];
   checklist: ChecklistItem[];
   alerts: Alert[];
-  addExpense: (expense: Omit<Expense, 'id'>) => void;
-  updateExpense: (id: string, expense: Partial<Expense>) => void;
-  deleteExpense: (id: string) => void;
+  loading: boolean;
+  addExpense: (expense: CreateExpenseRequest) => Promise<void>;
+  updateExpense: (id: string, expense: UpdateExpenseRequest) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
   addChecklistItem: (item: Omit<ChecklistItem, 'id' | 'status'>) => void;
   updateChecklistItem: (id: string, item: Partial<ChecklistItem>) => void;
   deleteChecklistItem: (id: string) => void;
@@ -18,20 +23,13 @@ interface ExpenseContextType {
   totalExpenses: number;
   savingsLeft: number;
   upcomingItems: number;
+  refreshExpenses: () => Promise<void>;
+  refreshCategories: () => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 
-// Mock data for demo
-const mockExpenses: Expense[] = [
-  { id: '1', category: 'Food & Dining', amount: 45.50, type: 'one-time', description: 'Lunch at restaurant', date: '2026-01-28' },
-  { id: '2', category: 'Transportation', amount: 30.00, type: 'recurring', description: 'Weekly gas', date: '2026-01-27', recurrence: 'weekly' },
-  { id: '3', category: 'Bills & Utilities', amount: 150.00, type: 'recurring', description: 'Electricity bill', date: '2026-01-25', recurrence: 'monthly' },
-  { id: '4', category: 'Entertainment', amount: 15.99, type: 'recurring', description: 'Netflix subscription', date: '2026-01-20', recurrence: 'monthly' },
-  { id: '5', category: 'Shopping', amount: 89.99, type: 'one-time', description: 'New headphones', date: '2026-01-18' },
-  { id: '6', category: 'Healthcare', amount: 50.00, type: 'one-time', description: 'Doctor visit copay', date: '2026-01-15' },
-];
-
+// Mock data for checklist and alerts (these would also come from API later)
 const mockChecklist: ChecklistItem[] = [
   { id: '1', name: 'Rent Payment', category: 'Bills & Utilities', amount: 1200, dueDate: '2026-02-01', status: 'pending' },
   { id: '2', name: 'Internet Bill', category: 'Bills & Utilities', amount: 60, dueDate: '2026-02-05', status: 'pending' },
@@ -45,22 +43,70 @@ const mockAlerts: Alert[] = [
 ];
 
 export function ExpenseProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>('smartexpense_expenses', mockExpenses);
+  const { user, isAuthenticated } = useAuth();
+  const [expenses, setExpenses] = useState<ExpenseApiData[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
   const [checklist, setChecklist] = useLocalStorage<ChecklistItem[]>('smartexpense_checklist', mockChecklist);
   const [alerts, setAlerts] = useLocalStorage<Alert[]>('smartexpense_alerts', mockAlerts);
 
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
-    const newExpense = { ...expense, id: crypto.randomUUID() };
-    setExpenses(prev => [newExpense, ...prev]);
+  const refreshCategories = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const response = await categoryService.getCategories();
+      if (response.success && response.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  }, [isAuthenticated]);
+
+  const refreshExpenses = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    try {
+      const response = await expenseService.getExpenses();
+      if (response.success && response.data) {
+        setExpenses(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshCategories();
+      refreshExpenses();
+    } else {
+      setExpenses([]);
+      setCategories([]);
+    }
+  }, [isAuthenticated, refreshCategories, refreshExpenses]);
+
+  const addExpense = async (expense: CreateExpenseRequest) => {
+    const response = await expenseService.createExpense(expense);
+    if (response.success && response.data) {
+      setExpenses(prev => [response.data, ...prev]);
+    }
   };
 
-  const updateExpense = (id: string, updates: Partial<Expense>) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+  const updateExpense = async (id: string, updates: UpdateExpenseRequest) => {
+    const response = await expenseService.updateExpense(id, updates);
+    if (response.success && response.data) {
+      setExpenses(prev => prev.map(e => e.id === id ? response.data : e));
+    }
   };
 
-  const deleteExpense = (id: string) => {
-    setExpenses(prev => prev.filter(e => e.id !== id));
+  const deleteExpense = async (id: string) => {
+    const response = await expenseService.deleteExpense(id);
+    if (response.success) {
+      setExpenses(prev => prev.filter(e => e.id !== id));
+    }
   };
 
   const addChecklistItem = (item: Omit<ChecklistItem, 'id' | 'status'>) => {
@@ -104,8 +150,10 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
   return (
     <ExpenseContext.Provider value={{
       expenses,
+      categories,
       checklist,
       alerts,
+      loading,
       addExpense,
       updateExpense,
       deleteExpense,
@@ -117,6 +165,8 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       totalExpenses,
       savingsLeft,
       upcomingItems,
+      refreshExpenses,
+      refreshCategories,
     }}>
       {children}
     </ExpenseContext.Provider>
