@@ -55,16 +55,17 @@ export default function Alerts() {
           ) : pendingAlerts.length > 0 ? (
             <div className="space-y-4">
               {pendingAlerts.map((alert) => {
-                const Icon = alertIcons[alert.type];
+                const alertType = alert.type || 'INFO';
+                const Icon = alertIcons[alertType] || Info;
                 return (
                   <div 
                     key={alert.id} 
                     className={cn(
                       "flex items-start gap-4 p-4 rounded-lg transition-all",
-                      alertStyles[alert.type]
+                      alertStyles[alertType]
                     )}
                   >
-                    <div className={cn("mt-0.5", iconStyles[alert.type])}>
+                    <div className={cn("mt-0.5", iconStyles[alertType])}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -78,12 +79,12 @@ export default function Alerts() {
                         variant="outline" 
                         className={cn(
                           "capitalize",
-                          alert.type === 'WARNING' && 'border-warning text-warning',
-                          alert.type === 'DANGER' && 'border-destructive text-destructive',
-                          alert.type === 'INFO' && 'border-primary text-primary'
+                          alertType === 'WARNING' && 'border-warning text-warning',
+                          alertType === 'DANGER' && 'border-destructive text-destructive',
+                          alertType === 'INFO' && 'border-primary text-primary'
                         )}
                       >
-                        {alert.type.toLowerCase()}
+                        {alertType.toLowerCase()}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -120,7 +121,8 @@ export default function Alerts() {
           <CardContent>
             <div className="space-y-3">
               {seenAlerts.map((alert) => {
-                const Icon = alertIcons[alert.type];
+                const alertType = alert.type || 'INFO';
+                const Icon = alertIcons[alertType] || Info;
                 return (
                   <div 
                     key={alert.id} 
