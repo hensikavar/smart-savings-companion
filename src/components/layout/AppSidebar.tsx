@@ -39,9 +39,8 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { alerts, upcomingItems } = useExpenses();
+  const { unreadAlertsCount, upcomingItems } = useExpenses();
 
-  const pendingAlerts = alerts.filter(a => a.status === 'pending').length;
   const collapsed = state === 'collapsed';
 
   return (
@@ -71,7 +70,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => {
                 const isActive = location.pathname === item.url;
-                const showBadge = item.title === 'Alerts' && pendingAlerts > 0;
+                const showBadge = item.title === 'Alerts' && unreadAlertsCount > 0;
                 const showChecklistBadge = item.title === 'Checklist' && upcomingItems > 0;
 
                 return (
@@ -95,7 +94,7 @@ export function AppSidebar() {
                               collapsed && "absolute -top-1 -right-1"
                             )}
                           >
-                            {pendingAlerts}
+                            {unreadAlertsCount}
                           </Badge>
                         )}
                         {showChecklistBadge && (

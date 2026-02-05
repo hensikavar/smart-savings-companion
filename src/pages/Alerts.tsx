@@ -7,28 +7,28 @@ import { useExpenses } from '@/contexts/ExpenseContext';
 import { cn } from '@/lib/utils';
 
 const alertIcons = {
-  warning: AlertTriangle,
-  danger: AlertTriangle,
-  info: Info,
+  WARNING: AlertTriangle,
+  DANGER: AlertTriangle,
+  INFO: Info,
 };
 
 const alertStyles = {
-  warning: 'border-l-4 border-l-warning bg-warning/5',
-  danger: 'border-l-4 border-l-destructive bg-destructive/5',
-  info: 'border-l-4 border-l-primary bg-primary/5',
+  WARNING: 'border-l-4 border-l-warning bg-warning/5',
+  DANGER: 'border-l-4 border-l-destructive bg-destructive/5',
+  INFO: 'border-l-4 border-l-primary bg-primary/5',
 };
 
 const iconStyles = {
-  warning: 'text-warning',
-  danger: 'text-destructive',
-  info: 'text-primary',
+  WARNING: 'text-warning',
+  DANGER: 'text-destructive',
+  INFO: 'text-primary',
 };
 
 export default function Alerts() {
-  const { alerts, dismissAlert } = useExpenses();
+  const { alerts, dismissAlert, alertsLoading } = useExpenses();
 
-  const pendingAlerts = alerts.filter(a => a.status === 'pending');
-  const seenAlerts = alerts.filter(a => a.status === 'seen');
+  const pendingAlerts = alerts.filter(a => a.status === 'PENDING');
+  const seenAlerts = alerts.filter(a => a.status === 'SEEN' || a.status === 'DISMISSED');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -48,7 +48,11 @@ export default function Alerts() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {pendingAlerts.length > 0 ? (
+          {alertsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : pendingAlerts.length > 0 ? (
             <div className="space-y-4">
               {pendingAlerts.map((alert) => {
                 const Icon = alertIcons[alert.type];
@@ -66,7 +70,7 @@ export default function Alerts() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{alert.message}</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {format(new Date(alert.date), 'PPP')}
+                        {format(new Date(alert.createdAt), 'PPP')}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -74,12 +78,12 @@ export default function Alerts() {
                         variant="outline" 
                         className={cn(
                           "capitalize",
-                          alert.type === 'warning' && 'border-warning text-warning',
-                          alert.type === 'danger' && 'border-destructive text-destructive',
-                          alert.type === 'info' && 'border-primary text-primary'
+                          alert.type === 'WARNING' && 'border-warning text-warning',
+                          alert.type === 'DANGER' && 'border-destructive text-destructive',
+                          alert.type === 'INFO' && 'border-primary text-primary'
                         )}
                       >
-                        {alert.type}
+                        {alert.type.toLowerCase()}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -128,7 +132,7 @@ export default function Alerts() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{alert.message}</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {format(new Date(alert.date), 'PPP')}
+                        {format(new Date(alert.createdAt), 'PPP')}
                       </p>
                     </div>
                     <Badge variant="outline" className="text-muted-foreground">

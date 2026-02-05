@@ -20,24 +20,24 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { EXPENSE_CATEGORIES } from '@/types/expense';
 import { useExpenses } from '@/contexts/ExpenseContext';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Checklist() {
-  const { checklist, addChecklistItem, toggleChecklistStatus, deleteChecklistItem } = useExpenses();
+  const { checklist, categories, addChecklistItem, toggleChecklistStatus, deleteChecklistItem, checklistLoading } = useExpenses();
   const { toast } = useToast();
   
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !category || !amount || !dueDate) {
+    if (!name || !categoryId || !amount || !dueDate) {
       toast({
         title: 'Missing fields',
         description: 'Please fill in all required fields',
@@ -46,23 +46,34 @@ export default function Checklist() {
       return;
     }
 
-    addChecklistItem({
-      name,
-      category,
-      amount: parseFloat(amount),
-      dueDate: format(dueDate, 'yyyy-MM-dd'),
-    });
+    setIsSubmitting(true);
+    try {
+      await addChecklistItem({
+        name,
+        categoryId,
+        amount: parseFloat(amount),
+        dueDate: format(dueDate, 'yyyy-MM-dd'),
+      });
 
-    toast({ title: 'Checklist item added' });
-    setName('');
-    setCategory('');
-    setAmount('');
-    setDueDate(undefined);
-    setShowForm(false);
+      toast({ title: 'Checklist item added' });
+      setName('');
+      setCategoryId('');
+      setAmount('');
+      setDueDate(undefined);
+      setShowForm(false);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add checklist item',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const pendingItems = checklist.filter(i => i.status === 'pending');
-  const completedItems = checklist.filter(i => i.status === 'completed');
+  const pendingItems = checklist.filter(i => i.status === 'PENDING');
+  const completedItems = checklist.filter(i => i.status === 'COMPLETED');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -98,13 +109,18 @@ export default function Checklist() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXPENSE_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{cat.icon}</span>
+                          <span>{cat.name}</span>
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -152,7 +168,9 @@ export default function Checklist() {
                 </Popover>
               </div>
               <div className="flex items-end gap-2">
-                <Button type="submit" className="flex-1">Save</Button>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel
                 </Button>
@@ -171,7 +189,11 @@ export default function Checklist() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {pendingItems.length > 0 ? (
+          {checklistLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : pendingItems.length > 0 ? (
             <div className="space-y-3">
               {pendingItems.map((item) => (
                 <div 
@@ -186,7 +208,8 @@ export default function Checklist() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {item.category} • Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
+                      <span className="mr-1">{item.categoryIcon}</span>
+                      {item.categoryName} • Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
                     </p>
                   </div>
                   <p className="font-semibold text-lg">${item.amount.toFixed(2)}</p>
@@ -231,7 +254,8 @@ export default function Checklist() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium line-through">{item.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {item.category} • Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
+                      <span className="mr-1">{item.categoryIcon}</span>
+                      {item.categoryName} • Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
                     </p>
                   </div>
                   <p className="font-semibold text-lg line-through">${item.amount.toFixed(2)}</p>
