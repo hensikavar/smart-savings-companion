@@ -34,12 +34,49 @@ export interface UpdateExpenseRequest {
   recurrenceType?: 'WEEKLY' | 'MONTHLY' | null;
 }
 
+export interface ExpenseFilterParams {
+  categoryId?: string;
+  expenseType?: 'ONE_TIME' | 'RECURRING';
+  startDate?: string;
+  endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+}
+
 export const expenseService = {
   /**
    * Get all expenses
    */
   getExpenses: async (): Promise<ApiResponse<ExpenseApiData[]>> => {
     return api.get<ApiResponse<ExpenseApiData[]>>('/expenses', true);
+  },
+
+  /**
+   * Get expense by ID
+   */
+  getExpenseById: async (id: string): Promise<ApiResponse<ExpenseApiData>> => {
+    return api.get<ApiResponse<ExpenseApiData>>(`/expenses/${id}`, true);
+  },
+
+  /**
+   * Filter expenses
+   */
+  filterExpenses: async (params: ExpenseFilterParams): Promise<ApiResponse<ExpenseApiData[]>> => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, String(value));
+      }
+    });
+    const queryString = queryParams.toString();
+    return api.get<ApiResponse<ExpenseApiData[]>>(`/expenses/filter${queryString ? `?${queryString}` : ''}`, true);
+  },
+
+  /**
+   * Get expenses by category
+   */
+  getExpensesByCategory: async (categoryId: string): Promise<ApiResponse<ExpenseApiData[]>> => {
+    return api.get<ApiResponse<ExpenseApiData[]>>(`/expenses/category/${categoryId}`, true);
   },
 
   /**

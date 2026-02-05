@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom';
 import { CalendarCheck, ArrowRight, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChecklistItem } from '@/types/expense';
+import { ChecklistApiData } from '@/services/checklistService';
 import { cn } from '@/lib/utils';
 
 interface UpcomingPaymentsProps {
-  items: ChecklistItem[];
+  items: ChecklistApiData[];
 }
 
 export function UpcomingPayments({ items }: UpcomingPaymentsProps) {
@@ -60,12 +60,12 @@ export function UpcomingPayments({ items }: UpcomingPaymentsProps) {
                       "h-12 w-12 rounded-xl flex items-center justify-center border",
                       getUrgencyStyle(item.dueDate)
                     )}>
-                      <Clock className="h-5 w-5" />
+                      <span className="text-xl">{item.categoryIcon || '📋'}</span>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">{item.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-sm text-muted-foreground">{item.category}</span>
+                        <span className="text-sm text-muted-foreground">{item.categoryName}</span>
                         <span className="text-muted-foreground">•</span>
                         <span className={cn(
                           "text-sm font-medium",

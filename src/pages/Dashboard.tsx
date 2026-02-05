@@ -38,7 +38,7 @@ export default function Dashboard() {
   }, [expenses]);
 
   const upcomingChecklist = useMemo(() => 
-    checklist.filter(i => i.status === 'pending').slice(0, 4),
+    checklist.filter(i => i.status === 'PENDING').slice(0, 4),
     [checklist]
   );
 
