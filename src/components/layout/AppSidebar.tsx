@@ -5,7 +5,8 @@ import {
   Bell, 
   User,
   LogOut,
-  Wallet
+  Wallet,
+  FileBarChart
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -30,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 const navItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Expenses', url: '/expenses', icon: Receipt },
+  { title: 'Reports', url: '/reports', icon: FileBarChart },
   { title: 'Checklist', url: '/checklist', icon: CheckSquare },
   { title: 'Alerts', url: '/alerts', icon: Bell },
   { title: 'Profile', url: '/profile', icon: User },
