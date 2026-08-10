@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# Smart Saving Companion — Setup Guide
 
-## Project info
+- **Frontend repo:** https://github.com/hensikavar/smart-savings-companion
+- **Backend repo:** https://github.com/hensikavar/smart-saving-companion-backend
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Prerequisites
 
-## How can I edit this code?
+- **Java 17** (JDK)
+- **Node.js 20+** and **npm**
+- **Docker & Docker Compose**
+- **Git**
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 1. Clone the Repositories
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+This project is split across two repos — clone both into a common parent folder:
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+mkdir smart-saving-companion && cd smart-saving-companion
 
-**Use your preferred IDE**
+git clone https://github.com/hensikavar/smart-saving-companion-backend.git backend
+git clone https://github.com/hensikavar/smart-savings-companion.git frontend
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 2. Database Setup (PostgreSQL via Docker)
 
-Follow these steps:
+From the `backend/` directory (where `docker-compose.yml` for Postgres lives):
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+cd backend
+docker compose up -d postgres
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+This spins up:
+- **Container:** `smart-expense-postgres`
+- **DB name:** `smart_expense`
+- **User / Password:** `postgres` / `postgres`
+- **Port:** `5432` (mapped to host)
+- **Volume:** `postgres_data` (persists data across restarts)
 
-# Step 3: Install the necessary dependencies.
-npm i
+Verify it's running:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+docker ps
+docker logs smart-expense-postgres
+```
+
+> Flyway is enabled (`baseline-on-migrate: true`) and will automatically run migrations from `classpath:db/migration` the first time the backend starts.
+
+---
+
+## 3. Backend Setup (Spring Boot / Kotlin)
+
+Set the required environment variable before running:
+
+```bash
+export SPLITWISE_ENCRYPTION_SECRET=your-secure-secret-here
+```
+
+From the `backend/` directory:
+
+```bash
+# Linux / macOS
+./gradlew bootRun
+
+# Windows
+gradlew.bat bootRun
+```
+
+Or build a jar and run it:
+
+```bash
+./gradlew build
+java -jar build/libs/backend-0.0.1-SNAPSHOT.jar
+```
+
+Backend runs at: **http://localhost:8000/api**
+Swagger UI: **http://localhost:8000/api/swagger-ui.html**
+
+---
+
+## 4. Frontend Setup (React + Vite)
+
+From the `frontend/` directory:
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000/api" > .env
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+App runs at: **http://localhost:5173**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Quick Start (all steps together)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# 0. Clone both repos (one time only)
+mkdir smart-saving-companion && cd smart-saving-companion
+git clone https://github.com/hensikavar/smart-saving-companion-backend.git backend
+git clone https://github.com/hensikavar/smart-savings-companion.git frontend
 
-## What technologies are used for this project?
+# 1. Start the database
+cd backend
+docker compose up -d postgres
 
-This project is built with:
+# 2. Start the backend
+export SPLITWISE_ENCRYPTION_SECRET=your-secure-secret-here
+./gradlew bootRun
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 3. In a new terminal, start the frontend
+cd ../frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000/api" > .env
+npm run dev
+```
 
-## How can I deploy this project?
+Then visit:
+- Frontend: http://localhost:5173
+- Backend API docs: http://localhost:8000/api/swagger-ui.html
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## Troubleshooting
 
-Yes, you can!
+| Issue | Fix |
+|---|---|
+| `Connection refused` to Postgres | Ensure `docker compose up -d postgres` ran successfully and port `5432` isn't already in use |
+| Flyway migration checksum errors | Delete the `flyway_schema_history` table (dev only) or run `docker compose down -v` to reset the DB volume |
+| Frontend can't reach backend (CORS/404) | Confirm `VITE_API_URL` includes the `/api` context path, and check backend CORS config allows `http://localhost:5173` |
+| Port `8000` or `5173` already in use | Change `server.port` in `application.yml` or pass `--port` to `vite` |
+| Swagger UI 404 | Remember the context path — it's at `/api/swagger-ui.html`, not `/swagger-ui.html` |
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Security Notes Before Deploying
+
+- Change the default Spring Security `admin/admin123` credentials
+- Move the JWT secret and Splitwise encryption secret out of `application.yml` into environment variables / a secrets manager
+- Change the default Postgres password
+- Disable `show-sql` and set `hibernate.ddl-auto` to `validate` in production (rely on Flyway migrations only)
